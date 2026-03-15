@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{{ collection_name }} — Collections</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f0e0c;
+      --surface: #1a1916;
+      --border: #2e2c28;
+      --accent: #c9a84c;
+      --text: #e8e4dc;
+      --text-muted: #7a7568;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    header {
+      padding: 1.75rem 3rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .btn-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.55rem 1.1rem;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-family: 'DM Sans', sans-serif;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .btn-back:hover {
+      border-color: var(--text-muted);
+      color: var(--text);
+      transform: translateX(-2px);
+    }
+
+    header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    main { padding: 2.5rem 3rem; }
+
+    .section-label {
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+    }
+
+    .photo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1rem;
+    }
+
+    .photo-card {
+      border-radius: 10px;
+      overflow: hidden;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      aspect-ratio: 1;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .photo-card:hover {
+      transform: scale(1.02);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+    }
+
+    .photo-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 5rem 0;
+      color: var(--text-muted);
+    }
+    .empty-state .icon { font-size: 3rem; margin-bottom: 1rem; }
+
+    /* ── Lightbox ── */
+    .lightbox {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.92);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    .lightbox.active { display: flex; }
+
+    .lightbox img {
+      max-width: 90vw;
+      max-height: 88vh;
+      border-radius: 8px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+      animation: fadeIn 0.2s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.96); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+    .lightbox-close {
+      position: fixed;
+      top: 1.5rem; right: 1.5rem;
+      background: rgba(255,255,255,0.1);
+      border: none;
+      color: #fff;
+      font-size: 1.4rem;
+      width: 2.5rem; height: 2.5rem;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s;
+    }
+    .lightbox-close:hover { background: rgba(255,255,255,0.2); }
+
+    .lightbox-nav {
+      position: fixed;
+      top: 50%; transform: translateY(-50%);
+      background: rgba(255,255,255,0.08);
+      border: none;
+      color: #fff;
+      font-size: 1.5rem;
+      width: 3rem; height: 3rem;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s;
+    }
+    .lightbox-nav:hover { background: rgba(255,255,255,0.16); }
+    #lb-prev { left: 1.5rem; }
+    #lb-next { right: 1.5rem; }
+
+    .lightbox-counter {
+      position: fixed;
+      bottom: 1.5rem; left: 50%; transform: translateX(-50%);
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.45);
+      letter-spacing: 0.1em;
+    }
+
+    @media (max-width: 600px) {
+      header, main { padding: 1.25rem; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <a href="/" class="btn-back">← Collections</a>
+  <h1>{{ collection_name }}</h1>
+</header>
+
+<main>
+  {% if images %}
+  <p class="section-label">{{ images|length }} photo{{ 's' if images|length != 1 }}</p>
+  <div class="photo-grid">
+    {% for img in images %}
+    <div class="photo-card" onclick="openLightbox({{ loop.index0 }})">
+      <img src="/uploads/{{ collection_name }}/{{ img }}" alt="{{ img }}" loading="lazy"/>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="icon">🖼️</div>
+    <p>This collection is empty.<br>Add photos from the main page.</p>
+  </div>
+  {% endif %}
+</main>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox">
+  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+  <button class="lightbox-nav" id="lb-prev" onclick="lbNavigate(-1)">‹</button>
+  <img id="lb-img" src="" alt=""/>
+  <button class="lightbox-nav" id="lb-next" onclick="lbNavigate(1)">›</button>
+  <div class="lightbox-counter" id="lb-counter"></div>
+</div>
+
+<script>
+  const images = [
+    {% for img in images %}
+    "/uploads/{{ collection_name }}/{{ img }}"{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ];
+
+  let currentIndex = 0;
+
+  function openLightbox(index) {
+    currentIndex = index;
+    updateLightbox();
+    document.getElementById('lightbox').classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLightbox() {
+    document.getElementById('lightbox').classList.remove('active');
+    document.body.style.overflow = '';
+  }
+
+  function lbNavigate(dir) {
+    currentIndex = (currentIndex + dir + images.length) % images.length;
+    updateLightbox();
+  }
+
+  function updateLightbox() {
+    document.getElementById('lb-img').src = images[currentIndex];
+    document.getElementById('lb-counter').textContent = `${currentIndex + 1} / ${images.length}`;
+  }
+
+  document.getElementById('lightbox').addEventListener('click', function(e) {
+    if (e.target === this) closeLightbox();
+  });
+
+  document.addEventListener('keydown', e => {
+    if (!document.getElementById('lightbox').classList.contains('active')) return;
+    if (e.key === 'Escape') closeLightbox();
+    if (e.key === 'ArrowLeft')  lbNavigate(-1);
+    if (e.key === 'ArrowRight') lbNavigate(1);
+  });
+</script>
+</body>
+</html>

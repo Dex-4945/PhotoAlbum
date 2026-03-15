@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Photo Collections</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f0e0c;
+      --surface: #1a1916;
+      --border: #2e2c28;
+      --accent: #c9a84c;
+      --accent-dim: #8a6f2e;
+      --text: #e8e4dc;
+      --text-muted: #7a7568;
+      --danger: #c0392b;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    header {
+      padding: 2.5rem 3rem 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 2rem;
+    }
+
+    header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--accent);
+    }
+
+    header h1 span {
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.6rem 1.3rem;
+      border-radius: 6px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: all 0.18s ease;
+      letter-spacing: 0.01em;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #0f0e0c;
+    }
+    .btn-primary:hover { background: #dbb85a; transform: translateY(-1px); }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid var(--accent-dim);
+    }
+    .btn-secondary:hover { background: rgba(201,168,76,0.08); transform: translateY(-1px); }
+
+    main {
+      padding: 2.5rem 3rem;
+    }
+
+    .section-label {
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+    }
+
+    .collections-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 1rem;
+    }
+
+    .collection-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem 1.75rem;
+      text-decoration: none;
+      color: var(--text);
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .collection-card:hover {
+      border-color: var(--accent-dim);
+      background: #201f1b;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+
+    .collection-card .name {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.1rem;
+      font-weight: 400;
+    }
+
+    .collection-card .arrow {
+      color: var(--accent);
+      font-size: 1.1rem;
+      opacity: 0.6;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+
+    .collection-card:hover .arrow {
+      opacity: 1;
+      transform: translateX(4px);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 5rem 0;
+      color: var(--text-muted);
+    }
+    .empty-state .icon { font-size: 3rem; margin-bottom: 1rem; }
+    .empty-state p { font-size: 1rem; line-height: 1.6; }
+
+    /* ── OVERLAY / MODAL ── */
+    .overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.72);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .overlay.active { display: flex; }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 2rem 2.25rem;
+      width: 100%;
+      max-width: 420px;
+      animation: slideUp 0.22s ease;
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .modal h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.4rem;
+      margin-bottom: 1.25rem;
+      color: var(--accent);
+    }
+
+    .modal input[type="text"] {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.65rem 0.9rem;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.15s;
+      margin-bottom: 1.1rem;
+    }
+    .modal input[type="text"]:focus { border-color: var(--accent-dim); }
+
+    .modal-actions {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: flex-end;
+      margin-top: 0.5rem;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 0.55rem 1.1rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .btn-ghost:hover { border-color: var(--text-muted); color: var(--text); }
+
+    /* Collection list in "add to" modal */
+    .collection-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      max-height: 260px;
+      overflow-y: auto;
+      margin-bottom: 1rem;
+    }
+
+    .collection-option {
+      padding: 0.7rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      color: var(--text);
+      transition: all 0.15s;
+      text-align: left;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .collection-option:hover,
+    .collection-option.selected {
+      border-color: var(--accent-dim);
+      background: rgba(201,168,76,0.06);
+      color: var(--accent);
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--surface);
+      border: 1px solid var(--accent-dim);
+      color: var(--text);
+      padding: 0.8rem 1.4rem;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      z-index: 200;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.3s ease;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    .progress-bar {
+      height: 3px;
+      background: var(--border);
+      border-radius: 99px;
+      margin-top: 0.75rem;
+      overflow: hidden;
+      display: none;
+    }
+    .progress-bar.active { display: block; }
+    .progress-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 99px;
+      width: 0%;
+      transition: width 0.3s;
+    }
+
+    @media (max-width: 600px) {
+      header, main { padding: 1.5rem; }
+      header { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Photo <span>Collections</span></h1>
+  <div class="header-actions">
+    <button class="btn btn-secondary" onclick="openAddToCollection()">＋ Add to Collection</button>
+    <button class="btn btn-primary" onclick="openNewCollection()">＋ New Collection</button>
+  </div>
+</header>
+
+<main>
+  <p class="section-label">All collections</p>
+
+  {% if collections %}
+  <div class="collections-grid">
+    {% for col in collections %}
+    <a href="/collection/{{ col }}" class="collection-card">
+      <span class="name">{{ col }}</span>
+      <span class="arrow">→</span>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="icon">📂</div>
+    <p>No collections yet.<br>Create your first one using the button above.</p>
+  </div>
+  {% endif %}
+</main>
+
+<!-- ── MODAL: New Collection ── -->
+<div class="overlay" id="overlay-new">
+  <div class="modal">
+    <h2>New Collection</h2>
+    <input type="text" id="new-collection-name" placeholder="Collection name…" autocomplete="off" />
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeModal('overlay-new')">Cancel</button>
+      <button class="btn btn-primary" onclick="proceedNewCollection()">Next → Choose Photos</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Add to Existing Collection ── -->
+<div class="overlay" id="overlay-addto">
+  <div class="modal">
+    <h2>Add to Collection</h2>
+    <div class="collection-list" id="addto-list"></div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeModal('overlay-addto')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Hidden file inputs -->
+<input type="file" id="file-input-new"   multiple accept="image/*" style="display:none"/>
+<input type="file" id="file-input-addto" multiple accept="image/*" style="display:none"/>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  let selectedAddToCollection = null;
+
+  /* ── Utilities ── */
+  function showToast(msg, duration = 3000) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), duration);
+  }
+
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('active');
+  }
+
+  /* ── New Collection flow ── */
+  function openNewCollection() {
+    document.getElementById('new-collection-name').value = '';
+    document.getElementById('overlay-new').classList.add('active');
+    setTimeout(() => document.getElementById('new-collection-name').focus(), 100);
+  }
+
+  function proceedNewCollection() {
+    const name = document.getElementById('new-collection-name').value.trim();
+    if (!name) { showToast('Please enter a collection name.'); return; }
+    closeModal('overlay-new');
+    document.getElementById('file-input-new').dataset.collectionName = name;
+    document.getElementById('file-input-new').click();
+  }
+
+  document.getElementById('file-input-new').addEventListener('change', async function () {
+    const name = this.dataset.collectionName;
+    if (!this.files.length) return;
+    await uploadFiles('/api/create_collection', name, this.files);
+    this.value = '';
+  });
+
+  /* ── Add to Collection flow ── */
+  async function openAddToCollection() {
+    const res = await fetch('/api/collections');
+    const cols = await res.json();
+    const list = document.getElementById('addto-list');
+    list.innerHTML = '';
+    if (!cols.length) {
+      list.innerHTML = '<p style="color:var(--text-muted);font-size:.9rem;">No collections yet. Create one first.</p>';
+    } else {
+      cols.forEach(col => {
+        const btn = document.createElement('button');
+        btn.className = 'collection-option';
+        btn.textContent = col;
+        btn.onclick = () => selectCollection(col, btn);
+        list.appendChild(btn);
+      });
+    }
+    selectedAddToCollection = null;
+    document.getElementById('overlay-addto').classList.add('active');
+  }
+
+  function selectCollection(name, el) {
+    document.querySelectorAll('.collection-option').forEach(b => b.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedAddToCollection = name;
+    closeModal('overlay-addto');
+    document.getElementById('file-input-addto').dataset.collectionName = name;
+    document.getElementById('file-input-addto').click();
+  }
+
+  document.getElementById('file-input-addto').addEventListener('change', async function () {
+    const name = this.dataset.collectionName;
+    if (!this.files.length) return;
+    await uploadFiles('/api/add_to_collection', name, this.files);
+    this.value = '';
+  });
+
+  /* ── Upload helper ── */
+  async function uploadFiles(endpoint, collectionName, files) {
+    const form = new FormData();
+    form.append('name', collectionName);
+    for (const f of files) form.append('images', f);
+
+    showToast(`Uploading ${files.length} photo(s)…`);
+    try {
+      const res = await fetch(endpoint, { method: 'POST', body: form });
+      const data = await res.json();
+      if (res.ok) {
+        showToast(`✓ ${data.saved.length} photo(s) added to "${data.collection}"`);
+        setTimeout(() => location.reload(), 1200);
+      } else {
+        showToast('Error: ' + (data.error || 'Upload failed'));
+      }
+    } catch (e) {
+      showToast('Network error during upload.');
+    }
+  }
+
+  /* ── Close overlay on background click ── */
+  document.querySelectorAll('.overlay').forEach(o => {
+    o.addEventListener('click', e => { if (e.target === o) o.classList.remove('active'); });
+  });
+
+  /* ── Enter key in name input ── */
+  document.getElementById('new-collection-name').addEventListener('keydown', e => {
+    if (e.key === 'Enter') proceedNewCollection();
+  });
+</script>
+</body>
+</html>
